@@ -9,6 +9,12 @@ class MatchupWinRateTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->authenticateAsAdmin();
+    }
+
     public function test_the_standalone_head_to_head_panel_is_removed(): void
     {
         $this->get(route('matches.index', [

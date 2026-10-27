@@ -8,9 +8,19 @@
             name="{{ $fighterPrefix }}"
             type="text"
             value="{{ $fighterName }}"
+            @isset($fighterNames)
+                list="{{ $fighterPrefix }}_suggestions"
+            @endisset
             @required($fighterNameRequired)
             class="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20"
         >
+        @isset($fighterNames)
+            <datalist id="{{ $fighterPrefix }}_suggestions">
+                @foreach ($fighterNames as $fighter)
+                    <option value="{{ \Illuminate\Support\Str::ucfirst($fighter->name) }}"></option>
+                @endforeach
+            </datalist>
+        @endisset
         @error($fighterPrefix)
             <p class="mt-1 text-sm text-rose-400">{{ $message }}</p>
         @enderror

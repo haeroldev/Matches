@@ -7,6 +7,14 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Authentication and roles
+
+The application uses signed HS256 JWTs in an HttpOnly, SameSite=Lax cookie. `APP_KEY` signs tokens by default; set a separate `JWT_SECRET` to use a dedicated key. `JWT_TTL` controls token lifetime in minutes (60 by default). Changing the signing key invalidates existing tokens.
+
+Run `php artisan migrate` to add the `role` and token-version fields. New users default to the `player` role. To provision an admin, set `ADMIN_NAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` in `.env` and run `php artisan db:seed`; the seeder will create or update that admin account. Create player accounts through Laravel Tinker with `App\Models\User::create(['name' => 'Player Name', 'email' => 'player@example.com', 'password' => 'a-unique-password', 'role' => 'player']);`; the model hashes passwords automatically.
+
+Players can register at `/signup` or sign in and search the Matches page only. Registration creates a player account and signs them in; it cannot grant admin access. Dashboard, fighter directory, and all match create/update/delete operations are restricted to admins. Both roles can sign out; signing out revokes that user's outstanding JWTs.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

@@ -11,7 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->encryptCookies(except: ['jwt']);
+        $middleware->alias([
+            'jwt.auth' => \App\Http\Middleware\AuthenticateWithJwt::class,
+            'role.admin' => \App\Http\Middleware\RequireAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

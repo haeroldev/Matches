@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\FightMatch;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
@@ -42,6 +44,7 @@ class MatchController extends Controller
         $fighter2Palong = $request->boolean('fighter_2_palong');
         $fighter2Lambe = $request->boolean('fighter_2_lambe');
         $fighter2LegColor = (string) $request->query('fighter_2_leg_color', '');
+        $fighterNames = $this->getFighterNames();
 
         $request->validate([
             'filter_fighters' => ['sometimes', 'boolean'],
@@ -67,15 +70,16 @@ class MatchController extends Controller
                 'fighter2Lambe' => $fighter2Lambe,
                 'fighter2LegColor' => $fighter2LegColor,
                 'filteredWinStats' => null,
+                'fighterNames' => $fighterNames,
             ]);
         }
 
         $filteredMatchesQuery = FightMatch::query()
             ->when($fighter1 !== '', function ($query) use ($fighter1) {
-                $query->where('fighter_1', 'like', "%{$fighter1}%");
+                $query->whereRaw('LOWER(TRIM(fighter_1)) = LOWER(TRIM(?))', [$fighter1]);
             })
             ->when($fighter2 !== '', function ($query) use ($fighter2) {
-                $query->where('fighter_2', 'like', "%{$fighter2}%");
+                $query->whereRaw('LOWER(TRIM(fighter_2)) = LOWER(TRIM(?))', [$fighter2]);
             })
             ->when($fighterFiltersActive, function ($query) use (
                 $fighter1Palong,
@@ -118,17 +122,21 @@ class MatchController extends Controller
                 ->selectRaw('COUNT(*) as total')
                 ->selectRaw('COALESCE(SUM(CASE WHEN LOWER(winner) = LOWER(fighter_1) THEN 1 ELSE 0 END), 0) as fighter_1_wins')
                 ->selectRaw('COALESCE(SUM(CASE WHEN LOWER(winner) = LOWER(fighter_2) THEN 1 ELSE 0 END), 0) as fighter_2_wins')
+                ->selectRaw("COALESCE(SUM(CASE WHEN LOWER(TRIM(winner)) = 'draw' THEN 1 ELSE 0 END), 0) as draws")
                 ->first();
 
             $total = (int) $filteredWinStats->total;
             $fighter1Wins = (int) $filteredWinStats->fighter_1_wins;
             $fighter2Wins = (int) $filteredWinStats->fighter_2_wins;
+            $draws = (int) $filteredWinStats->draws;
             $filteredWinStats = [
                 'total' => $total,
                 'fighter_1_wins' => $fighter1Wins,
                 'fighter_2_wins' => $fighter2Wins,
+                'draws' => $draws,
                 'fighter_1_percentage' => $total > 0 ? round(($fighter1Wins / $total) * 100, 1) : 0,
                 'fighter_2_percentage' => $total > 0 ? round(($fighter2Wins / $total) * 100, 1) : 0,
+                'draw_percentage' => $total > 0 ? round(($draws / $total) * 100, 1) : 0,
             ];
         }
 
@@ -161,12 +169,31 @@ class MatchController extends Controller
             'fighter2Lambe',
             'fighter2LegColor',
             'filteredWinStats',
+            'fighterNames',
         ));
+    }
+
+    public function fighters()
+    {
+        $perPage = 20;
+        $fighters = Schema::hasTable('matches')
+            ? $this->fighterNamesQuery()->paginate($perPage)->withQueryString()
+            : new LengthAwarePaginator(
+                collect(),
+                0,
+                $perPage,
+                LengthAwarePaginator::resolveCurrentPage(),
+                ['path' => LengthAwarePaginator::resolveCurrentPath()],
+            );
+
+        return view('matches.fighters', compact('fighters'));
     }
 
     public function create()
     {
-        return view('matches.create');
+        $fighterNames = $this->getFighterNames();
+
+        return view('matches.create', compact('fighterNames'));
     }
 
     public function store(Request $request)
@@ -207,7 +234,9 @@ class MatchController extends Controller
 
     public function edit(FightMatch $match)
     {
-        return view('matches.edit', compact('match'));
+        $fighterNames = $this->getFighterNames();
+
+        return view('matches.edit', compact('match', 'fighterNames'));
     }
 
     public function update(Request $request, FightMatch $match)
@@ -264,6 +293,30 @@ class MatchController extends Controller
         $match->delete();
 
         return redirect()->route('matches.index')->with('success', 'Match deleted successfully.');
+    }
+
+    private function getFighterNames()
+    {
+        if (! Schema::hasTable('matches')) {
+            return collect();
+        }
+
+        return $this->fighterNamesQuery()->get();
+    }
+
+    private function fighterNamesQuery()
+    {
+        return DB::table('matches')
+            ->selectRaw('LOWER(TRIM(fighter_1)) as name')
+            ->whereNotNull('fighter_1')
+            ->whereRaw("TRIM(fighter_1) <> ''")
+            ->union(
+                DB::table('matches')
+                    ->selectRaw('LOWER(TRIM(fighter_2)) as name')
+                    ->whereNotNull('fighter_2')
+                    ->whereRaw("TRIM(fighter_2) <> ''")
+            )
+            ->orderBy('name');
     }
 
     protected function saveImageFromRequest(Request $request, ?string $existingPath = null): ?string

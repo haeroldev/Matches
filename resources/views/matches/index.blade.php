@@ -5,13 +5,15 @@
 @section('content')
     <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-            <p class="text-sm uppercase tracking-[0.25em] text-amber-400">Administration</p>
+            <p class="text-sm uppercase tracking-[0.25em] text-amber-400">{{ auth()->user()->isAdmin() ? 'Administration' : 'Fight archive' }}</p>
             <h1 class="mt-2 text-3xl font-bold text-white">Fight Records</h1>
         </div>
 
-        <a href="{{ route('matches.create') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2.5 font-semibold text-slate-950 transition hover:bg-amber-400">
-            + Add Match
-        </a>
+        @if (auth()->user()->isAdmin())
+            <a href="{{ route('matches.create') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2.5 font-semibold text-slate-950 transition hover:bg-amber-400">
+                + Add Match
+            </a>
+        @endif
     </div>
 
     <div class="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 shadow-xl shadow-slate-950/30">
@@ -39,6 +41,7 @@
                     'fighterLambe' => $fighter1Lambe,
                     'fighterLegColor' => $fighter1LegColor,
                     'fighterColorBlankLabel' => 'Any color',
+                    'fighterNames' => $fighterNames,
                 ])
 
                 @include('matches.partials.fighter-fields', [
@@ -50,6 +53,7 @@
                     'fighterLambe' => $fighter2Lambe,
                     'fighterLegColor' => $fighter2LegColor,
                     'fighterColorBlankLabel' => 'Any color',
+                    'fighterNames' => $fighterNames,
                 ])
             </div>
 
@@ -72,22 +76,27 @@
             <div class="mt-5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
                 <div class="mb-3">
                     <h2 class="font-semibold text-white">Win rate for filtered fights</h2>
-                    <p class="text-xs text-slate-400">Percentages are calculated from all fights matching these filters.</p>
+                    <p class="text-xs text-slate-400">Percentages are calculated from all fights matching these filters, including draws.</p>
                 </div>
 
                 @if ($filteredWinStats['total'] === 0)
                     <p class="text-sm text-slate-300">No filtered fights to calculate a win rate.</p>
                 @else
-                    <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="grid gap-3 sm:grid-cols-3">
                         <div class="rounded-lg bg-slate-900/80 p-3">
                             <p class="truncate text-sm text-red-300">{{ $fighter1 !== '' ? $fighter1 : 'Fighter A' }}</p>
                             <p class="mt-1 text-2xl font-bold text-white">{{ number_format($filteredWinStats['fighter_1_percentage'], 1) }}%</p>
-                            <p class="text-xs text-slate-400">{{ $filteredWinStats['fighter_1_wins'] }} wins</p>
+                            <p class="text-xs text-slate-400">{{ $filteredWinStats['fighter_1_wins'] }} {{ \Illuminate\Support\Str::plural('win', $filteredWinStats['fighter_1_wins']) }}</p>
                         </div>
                         <div class="rounded-lg bg-slate-900/80 p-3">
                             <p class="truncate text-sm text-blue-300">{{ $fighter2 !== '' ? $fighter2 : 'Fighter B' }}</p>
                             <p class="mt-1 text-2xl font-bold text-white">{{ number_format($filteredWinStats['fighter_2_percentage'], 1) }}%</p>
-                            <p class="text-xs text-slate-400">{{ $filteredWinStats['fighter_2_wins'] }} wins</p>
+                            <p class="text-xs text-slate-400">{{ $filteredWinStats['fighter_2_wins'] }} {{ \Illuminate\Support\Str::plural('win', $filteredWinStats['fighter_2_wins']) }}</p>
+                        </div>
+                        <div class="rounded-lg bg-slate-900/80 p-3">
+                            <p class="truncate text-sm text-slate-300">Draw</p>
+                            <p class="mt-1 text-2xl font-bold text-white">{{ number_format($filteredWinStats['draw_percentage'], 1) }}%</p>
+                            <p class="text-xs text-slate-400">{{ $filteredWinStats['draws'] }} {{ \Illuminate\Support\Str::plural('draw', $filteredWinStats['draws']) }}</p>
                         </div>
                     </div>
                     <p class="mt-3 text-xs text-slate-400">Based on {{ $filteredWinStats['total'] }} filtered {{ \Illuminate\Support\Str::plural('fight', $filteredWinStats['total']) }}.</p>
@@ -118,6 +127,7 @@
                             </p>
                         </div>
 
+                        @if (auth()->user()->isAdmin())
                         <div class="flex items-center gap-2 pt-1">
                             <a href="{{ route('matches.edit', $match) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/40 bg-blue-500/10 text-blue-300 transition hover:bg-blue-500/20" title="Edit match" aria-label="Edit match">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
@@ -134,6 +144,7 @@
                                 </button>
                             </form>
                         </div>
+                        @endif
                     </div>
 
                     <div>

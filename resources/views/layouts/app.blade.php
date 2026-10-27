@@ -9,11 +9,19 @@
     <body class="min-h-screen bg-slate-900 text-slate-100">
         <nav class="border-b border-slate-700 bg-slate-950/80 backdrop-blur-sm">
             <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-                <a href="{{ route('dashboard') }}" class="text-xl font-black tracking-wide text-amber-400">Fight Admin</a>
+                <a href="{{ auth()->user()->isAdmin() ? route('dashboard') : route('matches.index') }}" class="text-xl font-black tracking-wide text-amber-400">Fight Records</a>
                 <div class="flex items-center gap-2">
-                    <a href="{{ route('dashboard') }}" class="rounded-full px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800">Dashboard</a>
                     <a href="{{ route('matches.index') }}" class="rounded-full px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800">Matches</a>
-                    <a href="{{ route('matches.create') }}" class="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-400">Add Match</a>
+                    @if (auth()->user()->isAdmin())
+                        <a href="{{ route('dashboard') }}" class="rounded-full px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800">Dashboard</a>
+                        <a href="{{ route('fighters.index') }}" class="rounded-full px-3 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800">Fighters</a>
+                        <a href="{{ route('matches.create') }}" class="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-400">Add Match</a>
+                    @endif
+                    <span class="hidden text-sm text-slate-400 sm:inline">{{ auth()->user()->name }}</span>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="rounded-full px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800">Sign out</button>
+                    </form>
                 </div>
             </div>
         </nav>

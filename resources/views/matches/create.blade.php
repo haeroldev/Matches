@@ -21,6 +21,7 @@
                 'fighterLambe' => old('fighter_1_lambe', false),
                 'fighterLegColor' => old('fighter_1_leg_color', ''),
                 'fighterColorBlankLabel' => 'Not specified',
+                'fighterNames' => $fighterNames,
             ])
 
             @include('matches.partials.fighter-fields', [
@@ -32,6 +33,7 @@
                 'fighterLambe' => old('fighter_2_lambe', false),
                 'fighterLegColor' => old('fighter_2_leg_color', ''),
                 'fighterColorBlankLabel' => 'Not specified',
+                'fighterNames' => $fighterNames,
             ])
 
             <div>
